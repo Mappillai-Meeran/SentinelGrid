@@ -7,7 +7,7 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  build:
+  backend-build:
     name: Build & Test SentinelGrid Backend
     runs-on: ubuntu-latest
 
@@ -22,7 +22,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Build with Maven and Run Unit/Integration Tests
+      - name: Build with Maven & Run Tests
         run: mvn clean package -B
 
       - name: Upload Application JAR Artifact
@@ -31,3 +31,22 @@ jobs:
           name: sentinelgrid-backend-jar
           path: target/sentinelgrid-*.jar
           retention-days: 7
+
+  frontend-build:
+    name: Build SentinelGrid Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies & Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
