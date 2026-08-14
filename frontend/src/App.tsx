@@ -3,10 +3,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { OverviewPage } from './pages/OverviewPage';
+import { EmergencyOperationsPage } from './pages/EmergencyOperationsPage';
 import { PatientDashboardPage } from './pages/PatientDashboardPage';
 import { MyReservationsPage } from './pages/MyReservationsPage';
 import { PharmacistInventoryPage } from './pages/PharmacistInventoryPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { PharmacyNetworkPage } from './pages/PharmacyNetworkPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
+import { AuditPage } from './pages/AuditPage';
+import { SystemHealthPage } from './pages/SystemHealthPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> = ({ children, roles }) => {
   const { isAuthenticated, user } = useAuthStore();
@@ -16,7 +21,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> 
   }
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Layout>{children}</Layout>;
@@ -25,23 +30,25 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> 
 export const App: React.FC = () => {
   const { user } = useAuthStore();
 
-  const getDefaultRedirect = () => {
-    if (!user) return '/login';
-    if (user.role === 'ADMIN') return '/admin-dashboard';
-    if (user.role === 'PHARMACIST') return '/inventory';
-    return '/patient-dashboard';
-  };
-
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
         <Route
-          path="/patient-dashboard"
+          path="/"
           element={
-            <ProtectedRoute roles={['PATIENT', 'ADMIN']}>
-              <PatientDashboardPage />
+            <ProtectedRoute roles={['PATIENT', 'PHARMACIST', 'ADMIN']}>
+              <OverviewPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/operations"
+          element={
+            <ProtectedRoute roles={['PATIENT', 'PHARMACIST', 'ADMIN']}>
+              <EmergencyOperationsPage />
             </ProtectedRoute>
           }
         />
@@ -56,10 +63,19 @@ export const App: React.FC = () => {
         />
 
         <Route
-          path="/my-reservations"
+          path="/reservations"
           element={
-            <ProtectedRoute roles={['PATIENT', 'ADMIN']}>
+            <ProtectedRoute roles={['PATIENT', 'PHARMACIST', 'ADMIN']}>
               <MyReservationsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/pharmacies"
+          element={
+            <ProtectedRoute roles={['PATIENT', 'PHARMACIST', 'ADMIN']}>
+              <PharmacyNetworkPage />
             </ProtectedRoute>
           }
         />
@@ -74,15 +90,42 @@ export const App: React.FC = () => {
         />
 
         <Route
-          path="/admin-dashboard"
+          path="/ai-search"
           element={
-            <ProtectedRoute roles={['ADMIN']}>
-              <AdminDashboardPage />
+            <ProtectedRoute roles={['PATIENT', 'PHARMACIST', 'ADMIN']}>
+              <EmergencyOperationsPage />
             </ProtectedRoute>
           }
         />
 
-        <Route path="*" element={<Navigate to={getDefaultRedirect()} replace />} />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <AnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/audit"
+          element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <AuditPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/system-health"
+          element={
+            <ProtectedRoute roles={['ADMIN', 'PHARMACIST', 'PATIENT']}>
+              <SystemHealthPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>
   );

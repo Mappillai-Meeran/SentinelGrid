@@ -27,6 +27,7 @@ import java.util.List;
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final com.sentragrid.audit.service.AuditLogService auditLogService;
 
     @GetMapping("/summary")
     @Operation(summary = "Get high-level system summary metrics")
@@ -65,5 +66,12 @@ public class DashboardController {
             @RequestParam(defaultValue = "5") int limit) {
         List<TopPharmacyDto> topPharmacies = dashboardService.getTopPharmacies(limit);
         return ResponseEntity.ok(ApiResponse.success(topPharmacies, "Top pharmacies retrieved"));
+    }
+
+    @GetMapping("/audit-logs")
+    @Operation(summary = "Get system audit logs")
+    public ResponseEntity<ApiResponse<List<com.sentragrid.audit.entity.AuditLog>>> getAuditLogs() {
+        List<com.sentragrid.audit.entity.AuditLog> logs = auditLogService.getAllAuditLogs();
+        return ResponseEntity.ok(ApiResponse.success(logs, "Audit logs retrieved"));
     }
 }

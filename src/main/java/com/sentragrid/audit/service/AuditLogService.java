@@ -39,4 +39,8 @@ public class AuditLogService {
     public List<AuditLog> getLogsForEntity(String entityName, Long entityId) {
         return auditLogRepository.findByEntityNameAndEntityId(entityName, entityId);
     }
+
+    public List<AuditLog> getAllAuditLogs() {
+        return auditLogRepository.findAllByOrderByTimestampDesc();
+    }
 }

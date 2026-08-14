@@ -99,6 +99,16 @@ export interface LowStockItem {
   availableQuantity: number;
 }
 
+export interface AuditLog {
+  id: number;
+  entityName: string;
+  entityId: number;
+  action: string;
+  performedBy: string;
+  details: string;
+  timestamp: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;
