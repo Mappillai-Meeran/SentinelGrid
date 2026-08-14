@@ -16,6 +16,15 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     List<Inventory> findByPharmacyId(Long pharmacyId);
 
+    @Query("SELECT COALESCE(SUM(i.quantity), 0) FROM Inventory i")
+    long sumTotalQuantity();
+
+    @Query("SELECT i FROM Inventory i " +
+           "JOIN FETCH i.pharmacy p " +
+           "JOIN FETCH i.medicine m " +
+           "WHERE (i.quantity - i.reservedQuantity) < :threshold")
+    List<Inventory> findLowStockInventory(@Param("threshold") int threshold);
+
     @Query("SELECT i FROM Inventory i " +
            "JOIN i.medicine m " +
            "JOIN i.pharmacy p " +

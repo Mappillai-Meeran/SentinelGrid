@@ -14,6 +14,7 @@ import com.sentragrid.entity.enums.ReservationStatus;
 import com.sentragrid.exception.BadRequestException;
 import com.sentragrid.exception.ResourceNotFoundException;
 import com.sentragrid.kafka.KafkaProducerService;
+import com.sentragrid.kafka.event.ReservationConfirmedEvent;
 import com.sentragrid.kafka.event.ReservationCreatedEvent;
 import com.sentragrid.kafka.event.ReservationExpiredEvent;
 import com.sentragrid.repository.InventoryRepository;
@@ -29,6 +30,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -187,12 +189,53 @@ public class ReservationService {
         auditLogService.logAction("Reservation", reservationId, "RESERVATION_CONFIRMED", confirmedBy,
                 "Confirmed pickup of " + reservation.getQuantity() + " units of " + reservation.getMedicine().getName());
 
+        // Publish Kafka Event
+        ReservationConfirmedEvent event = ReservationConfirmedEvent.builder()
+                .reservationId(updatedReservation.getId())
+                .patientId(updatedReservation.getPatient().getId())
+                .pharmacyId(updatedReservation.getPharmacy().getId())
+                .medicineId(updatedReservation.getMedicine().getId())
+                .quantity(updatedReservation.getQuantity())
+                .confirmedBy(confirmedBy)
+                .timestamp(LocalDateTime.now())
+                .build();
+        kafkaProducerService.sendReservationConfirmedEvent(event);
+
         return mapToReservationResponseDto(updatedReservation);
     }
 
     @Transactional(readOnly = true)
     public List<ReservationResponseDto> getPatientReservations(Long patientId) {
-        return reservationRepository.findByPatientId(patientId).stream()
+        return getPatientReservations(patientId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationResponseDto> getPatientReservations(Long patientId, ReservationStatus status) {
+        List<Reservation> reservations;
+        if (status == null) {
+            reservations = reservationRepository.findByPatientId(patientId);
+        } else {
+            reservations = reservationRepository.findByPatientIdAndStatus(patientId, status);
+        }
+        return reservations.stream()
+                .map(this::mapToReservationResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationResponseDto> getReservationsForUser(String username) {
+        return getReservationsForUser(username, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationResponseDto> getReservationsForUser(String username, ReservationStatus status) {
+        List<Reservation> reservations;
+        if (status == null) {
+            reservations = reservationRepository.findByPatientUsernameOrderByCreatedAtDesc(username);
+        } else {
+            reservations = reservationRepository.findByPatientUsernameAndStatusOrderByCreatedAtDesc(username, status);
+        }
+        return reservations.stream()
                 .map(this::mapToReservationResponseDto)
                 .collect(Collectors.toList());
     }
@@ -225,6 +268,23 @@ public class ReservationService {
                 .requiresPrescription(reservation.getMedicine().isRequiresPrescription())
                 .build();
 
+        Long remainingSeconds = null;
+        Long remainingMinutes = null;
+        Boolean expired = null;
+
+        if (reservation.getExpiresAt() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isBefore(reservation.getExpiresAt())) {
+                remainingSeconds = Duration.between(now, reservation.getExpiresAt()).getSeconds();
+                remainingMinutes = remainingSeconds / 60;
+                expired = false;
+            } else {
+                remainingSeconds = 0L;
+                remainingMinutes = 0L;
+                expired = true;
+            }
+        }
+
         return ReservationResponseDto.builder()
                 .id(reservation.getId())
                 .patientId(reservation.getPatient().getId())
@@ -234,6 +294,9 @@ public class ReservationService {
                 .quantity(reservation.getQuantity())
                 .status(reservation.getStatus())
                 .expiresAt(reservation.getExpiresAt())
+                .remainingSeconds(remainingSeconds)
+                .remainingMinutes(remainingMinutes)
+                .expired(expired)
                 .confirmedAt(reservation.getConfirmedAt())
                 .cancelledAt(reservation.getCancelledAt())
                 .createdAt(reservation.getCreatedAt())

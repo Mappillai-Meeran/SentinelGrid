@@ -21,6 +21,9 @@ public class ReservationResponseDto {
     private Integer quantity;
     private ReservationStatus status;
     private LocalDateTime expiresAt;
+    private Long remainingSeconds;
+    private Long remainingMinutes;
+    private Boolean expired;
     private LocalDateTime confirmedAt;
     private LocalDateTime cancelledAt;
     private LocalDateTime createdAt;

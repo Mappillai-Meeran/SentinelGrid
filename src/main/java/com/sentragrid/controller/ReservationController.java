@@ -4,6 +4,7 @@ import com.sentragrid.common.ApiResponse;
 import com.sentragrid.dto.ReservationRequestDto;
 import com.sentragrid.dto.ReservationResponseDto;
 import com.sentragrid.entity.User;
+import com.sentragrid.entity.enums.ReservationStatus;
 import com.sentragrid.repository.UserRepository;
 import com.sentragrid.service.ReservationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -63,12 +64,14 @@ public class ReservationController {
 
     @GetMapping("/my")
     @PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
-    @Operation(summary = "Get reservations for current authenticated patient")
-    public ResponseEntity<ApiResponse<List<ReservationResponseDto>>> getMyReservations(Authentication authentication) {
+    @Operation(summary = "Get reservations for current authenticated patient with optional status filter")
+    public ResponseEntity<ApiResponse<List<ReservationResponseDto>>> getMyReservations(
+            @RequestParam(required = false) ReservationStatus status,
+            Authentication authentication) {
         User patient = userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
 
-        List<ReservationResponseDto> reservations = reservationService.getPatientReservations(patient.getId());
+        List<ReservationResponseDto> reservations = reservationService.getPatientReservations(patient.getId(), status);
         return ResponseEntity.ok(ApiResponse.success(reservations, "Patient reservations retrieved"));
     }
 

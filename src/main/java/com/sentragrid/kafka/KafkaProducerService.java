@@ -1,6 +1,7 @@
 package com.sentragrid.kafka;
 
 import com.sentragrid.common.AppConstants;
+import com.sentragrid.kafka.event.ReservationConfirmedEvent;
 import com.sentragrid.kafka.event.ReservationCreatedEvent;
 import com.sentragrid.kafka.event.ReservationExpiredEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,19 @@ public class KafkaProducerService {
             kafkaTemplate.send(AppConstants.RESERVATION_CREATED_TOPIC, String.valueOf(event.getReservationId()), event);
         } catch (Exception e) {
             log.warn("Failed to publish ReservationCreatedEvent to Kafka: {}", e.getMessage());
+        }
+    }
+
+    public void sendReservationConfirmedEvent(ReservationConfirmedEvent event) {
+        if (kafkaTemplate == null) {
+            log.info("Kafka is disabled. Skipping ReservationConfirmedEvent publishing: {}", event);
+            return;
+        }
+        try {
+            log.info("Publishing ReservationConfirmedEvent to Kafka: {}", event);
+            kafkaTemplate.send(AppConstants.RESERVATION_CONFIRMED_TOPIC, String.valueOf(event.getReservationId()), event);
+        } catch (Exception e) {
+            log.warn("Failed to publish ReservationConfirmedEvent to Kafka: {}", e.getMessage());
         }
     }
 

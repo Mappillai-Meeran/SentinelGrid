@@ -15,6 +15,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByPatientId(Long patientId);
 
+    List<Reservation> findByPatientIdAndStatus(Long patientId, ReservationStatus status);
+
+    List<Reservation> findByPatientUsernameAndStatusOrderByCreatedAtDesc(String username, ReservationStatus status);
+
+    List<Reservation> findByPatientUsernameOrderByCreatedAtDesc(String username);
+
     List<Reservation> findByStatus(ReservationStatus status);
 
     @Query("SELECT r FROM Reservation r " +
@@ -30,4 +36,25 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     boolean existsActiveReservationForPatientAndCategory(
             @Param("patientId") Long patientId,
             @Param("category") String category);
+
+    long countByStatus(ReservationStatus status);
+
+    @Query("SELECT new com.sentragrid.dashboard.dto.TopMedicineDto(r.medicine.name, COUNT(r)) " +
+           "FROM Reservation r " +
+           "GROUP BY r.medicine.name " +
+           "ORDER BY COUNT(r) DESC")
+    List<com.sentragrid.dashboard.dto.TopMedicineDto> findTopReservedMedicines(org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT new com.sentragrid.dashboard.dto.TopPharmacyDto(r.pharmacy.name, COUNT(r)) " +
+           "FROM Reservation r " +
+           "GROUP BY r.pharmacy.name " +
+           "ORDER BY COUNT(r) DESC")
+    List<com.sentragrid.dashboard.dto.TopPharmacyDto> findTopPharmaciesByReservations(org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT CAST(r.createdAt AS date) as date, COUNT(r) as count " +
+           "FROM Reservation r " +
+           "WHERE r.createdAt >= :startDate " +
+           "GROUP BY CAST(r.createdAt AS date) " +
+           "ORDER BY CAST(r.createdAt AS date) ASC")
+    List<Object[]> findDailyReservationCounts(@Param("startDate") LocalDateTime startDate);
 }
