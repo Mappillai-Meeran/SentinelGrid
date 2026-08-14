@@ -5,7 +5,7 @@
 ![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
-**SentinelGrid** is a production-ready, cloud-native emergency medicine reservation and availability platform designed for high concurrency, real-time inventory management, and audit compliance. Built as an MCA Final-Year Capstone Project.
+**SentinelGrid** is a production-ready, cloud-native emergency medicine reservation and availability platform designed for high concurrency, real-time inventory management, and audit compliance. Built as an MCA final-year capstone project demonstrating enterprise backend engineering practices.
 
 ---
 
@@ -64,6 +64,12 @@ com.sentragrid
 
 ---
 
+## 🏗️ Architecture Overview
+
+![Architecture](screenshots/architecture.png)
+
+---
+
 ## ⚙️ Concurrency & Reservation Lifecycle
 
 ```
@@ -102,12 +108,15 @@ com.sentragrid
 * Docker & Docker Compose (Optional for containerized mode)
 
 ### Option 1: Local Development (H2 In-Memory)
+
+> **Note:** The project runs with **H2 for local development** and **PostgreSQL for production / Docker deployment**.
+
 Run the application locally without requiring external PostgreSQL/Redis/Kafka servers (H2 in-memory DB enabled by default):
 
 ```bash
 # Clone repository
-git clone https://github.com/your-repo/sentinelgrid.git
-cd sentinelgrid
+git clone https://github.com/Mappillai-Meeran/SentinelGrid.git
+cd SentinelGrid
 
 # Build project and run tests
 mvn clean package
@@ -141,6 +150,16 @@ docker-compose down
 
 ---
 
+## 🔐 Demo Credentials
+
+| Role | Username | Password |
+|------|----------|----------|
+| Patient | `patient1` | `password123` |
+| Pharmacist | `pharmacist1` | `password123` |
+| Admin | `admin1` | `password123` |
+
+---
+
 ## 📡 REST API Reference
 
 | Endpoint | Method | Auth | Description |
@@ -155,6 +174,37 @@ docker-compose down
 | `/api/reservations/my` | `GET` | `PATIENT`, `ADMIN` | View current patient's reservations |
 | `/api/pharmacies/{id}/inventory` | `GET` | Public | Get pharmacy stock list |
 | `/api/pharmacies/{id}/inventory` | `PUT` | `PHARMACIST`, `ADMIN` | Update pharmacy stock levels |
+
+---
+
+## ⚡ Quick API Test
+
+### Login
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"patient1","password":"password123"}'
+```
+
+### Search Medicine
+
+```bash
+curl 'http://localhost:8080/api/medicines/search?name=Remdesivir'
+```
+
+---
+
+## 📸 Screenshots
+
+| Feature | Screenshot |
+|---------|------------|
+| Login Success | ![Login](screenshots/login.png) |
+| AI Search | ![AI Search](screenshots/ai-search.png) |
+| Medicine Search | ![Medicine Search](screenshots/medicine-search.png) |
+| Reservation Created | ![Reservation](screenshots/reservation.png) |
+| Inventory Verification | ![Inventory](screenshots/inventory.png) |
+| Audit Logs | ![Audit](screenshots/audit.png) |
 
 ---
 
@@ -181,3 +231,13 @@ mvn verify
 1. **Geo-location Proximity Search**: Integration with PostGIS for real-time distance sorting based on latitude/longitude coordinates.
 2. **Prescription Verification Pipeline**: AI-driven OCR validation for prescription uploading before high-risk antiviral medicine reservation.
 3. **Push & SMS Notifications**: Integration with Twilio / Firebase for SMS and WebPush alerts on medicine availability and expiration reminders.
+
+---
+
+## 👨‍💻 Author
+
+**Mappillai Meeran A**
+* MCA – Sri Manakula Vinayagar Engineering College
+* GitHub: [https://github.com/Mappillai-Meeran](https://github.com/Mappillai-Meeran)
+* LinkedIn: [https://www.linkedin.com/in/mappillaimeeran](https://www.linkedin.com/in/mappillaimeeran)
+
