@@ -66,6 +66,33 @@ com.sentragrid
 
 ## 🏗️ Architecture Overview
 
+```mermaid
+graph TD
+    Client[Client / Mobile / Web] -->|HTTP / REST| API[Spring Boot REST Controllers]
+    
+    subgraph Security Layer
+        API -->|Validate JWT| JwtFilter[JwtAuthenticationFilter]
+    end
+    
+    subgraph Application Core
+        API --> MedicineSvc[Medicine Service]
+        API --> ResSvc[Reservation Service]
+        API --> AiSvc[Gemini AI Assistant]
+    end
+    
+    subgraph Data & Cache
+        MedicineSvc -->|Cacheable| Redis[(Redis Cache)]
+        ResSvc -->|Optimistic Lock @Version| DB[(PostgreSQL / H2)]
+        ResSvc -->|Immutable Log| AuditDB[(Audit Logs)]
+    end
+    
+    subgraph Messaging & Background Tasks
+        ResSvc -->|Publish Events| Kafka[Apache Kafka]
+        Scheduler[ReservationExpiryScheduler @Scheduled] -->|Auto-Release Stock| ResSvc
+    end
+```
+
+*Architectural Diagram placeholder image:*
 ![Architecture](screenshots/architecture.png)
 
 ---
