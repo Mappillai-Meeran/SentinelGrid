@@ -2,20 +2,32 @@ spring:
   config:
     activate:
       on-profile: docker
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: "Initial SentinelGrid Schema"
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/sentinelgrid}
-    username: ${SPRING_DATASOURCE_USERNAME:sentinel_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:sentinel_password}
+    username: ${SPRING_DATASOURCE_USERNAME:sentinel_app}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+  sql:
+    init:
+      mode: never
+  redis:
+    enabled: true
   data:
     redis:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
   kafka:
+    enabled: true
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
     consumer:
       group-id: sentinelgrid-group
@@ -27,3 +39,9 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  security:
+    trusted-proxies: ${SECURITY_TRUSTED_PROXIES:}

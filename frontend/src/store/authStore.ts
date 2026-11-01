@@ -6,7 +6,9 @@ interface AuthState {
   user: {
     username: string;
     email: string;
-    role: 'PATIENT' | 'PHARMACIST' | 'ADMIN';
+    role: 'PATIENT' | 'PHARMACIST' | 'PHARMACY_MANAGER' | 'ADMIN';
+    pharmacyId?: number | null;
+    pharmacyName?: string | null;
   } | null;
   isAuthenticated: boolean;
   login: (data: AuthResponse) => void;
@@ -34,6 +36,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       username: data.username,
       email: data.email,
       role: data.role,
+      pharmacyId: data.pharmacyId ?? null,
+      pharmacyName: data.pharmacyName ?? null,
     };
     localStorage.setItem('sentinel_token', data.token);
     localStorage.setItem('sentinel_user', JSON.stringify(userInfo));

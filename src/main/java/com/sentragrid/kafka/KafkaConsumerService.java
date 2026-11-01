@@ -4,11 +4,13 @@ import com.sentragrid.common.AppConstants;
 import com.sentragrid.kafka.event.ReservationCreatedEvent;
 import com.sentragrid.kafka.event.ReservationExpiredEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "spring.kafka.enabled", havingValue = "true", matchIfMissing = false)
 public class KafkaConsumerService {
 
     @KafkaListener(topics = AppConstants.RESERVATION_CREATED_TOPIC, groupId = "${spring.kafka.consumer.group-id:sentinelgrid-group}")

@@ -37,4 +37,18 @@ public class Pharmacy extends BaseEntity {
     @NotBlank
     @Column(name = "contact_number", nullable = false)
     private String contactNumber;
+
+    @Column(name = "opening_time")
+    private java.time.LocalTime openingTime;
+
+    @Column(name = "closing_time")
+    private java.time.LocalTime closingTime;
+
+    @Column(name = "is_24_seven", nullable = false)
+    @Builder.Default
+    private boolean is24Seven = false;
+
+    @Column(name = "timezone")
+    @Builder.Default
+    private String timezone = "Asia/Kolkata";
 }

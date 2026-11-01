@@ -20,7 +20,7 @@ public class SentinelGridApplication {
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
-        log.info("SentinelGrid local profile started successfully.");
+        log.info("SentinelGrid application started successfully.");
     }
 }
 

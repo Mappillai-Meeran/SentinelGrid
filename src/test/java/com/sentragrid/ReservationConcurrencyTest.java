@@ -65,6 +65,7 @@ class ReservationConcurrencyTest {
         int numberOfThreads = 2;
         ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
         CountDownLatch latch = new CountDownLatch(1);
+        java.util.concurrent.CyclicBarrier readBarrier = new java.util.concurrent.CyclicBarrier(numberOfThreads);
 
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger optimisticLockFailureCount = new AtomicInteger(0);
@@ -76,6 +77,9 @@ class ReservationConcurrencyTest {
 
                     // Fetch inventory state
                     Inventory inv = inventoryRepository.findById(inventoryId).orElseThrow();
+
+                    // Ensure both threads have read the identical version before either attempts to save
+                    readBarrier.await();
 
                     // Attempt to reserve quantity
                     inv.setReservedQuantity(inv.getReservedQuantity() + 1);

@@ -19,4 +19,6 @@ public class AuthResponse {
     private String username;
     private String email;
     private UserRole role;
+    private Long pharmacyId;
+    private String pharmacyName;
 }

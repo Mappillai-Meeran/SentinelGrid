@@ -6,7 +6,10 @@ import com.sentragrid.dto.InventoryCreateRequest;
 import com.sentragrid.dto.InventoryDto;
 import com.sentragrid.dto.InventoryUpdateDto;
 import com.sentragrid.dto.InventoryUpdateRequest;
+import com.sentragrid.dto.ReservationResponseDto;
+import com.sentragrid.entity.enums.ReservationStatus;
 import com.sentragrid.service.PharmacyService;
+import com.sentragrid.service.ReservationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,16 +29,33 @@ import java.util.List;
 public class PharmacyController {
 
     private final PharmacyService pharmacyService;
+    private final ReservationService reservationService;
+
+    @GetMapping("/{id}/reservations")
+    @PreAuthorize("hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
+    @Operation(summary = "Get incoming reservations for a specific pharmacy with strict branch scoping")
+    public ResponseEntity<ApiResponse<List<ReservationResponseDto>>> getPharmacyReservations(
+            @PathVariable Long id,
+            @RequestParam(required = false) ReservationStatus status,
+            Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : null;
+        List<ReservationResponseDto> reservations = reservationService.getPharmacyReservations(id, status, username);
+        return ResponseEntity.ok(ApiResponse.success(reservations, "Pharmacy reservations retrieved"));
+    }
 
     @GetMapping("/{id}/inventory")
+    @PreAuthorize("hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
     @Operation(summary = "Get inventory for a specific pharmacy")
-    public ResponseEntity<ApiResponse<List<InventoryDto>>> getPharmacyInventory(@PathVariable Long id) {
-        List<InventoryDto> inventory = pharmacyService.getPharmacyInventory(id);
+    public ResponseEntity<ApiResponse<List<InventoryDto>>> getPharmacyInventory(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : null;
+        List<InventoryDto> inventory = pharmacyService.getPharmacyInventory(id, username);
         return ResponseEntity.ok(ApiResponse.success(inventory, "Pharmacy inventory retrieved"));
     }
 
     @PostMapping("/{id}/inventory")
-    @PreAuthorize("hasRole('PHARMACIST') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
     @Operation(summary = "Add a new medicine stock record to pharmacy inventory")
     public ResponseEntity<ApiResponse<InventoryDto>> addPharmacyInventory(
             @PathVariable Long id,
@@ -47,7 +67,7 @@ public class PharmacyController {
     }
 
     @PutMapping("/{id}/inventory")
-    @PreAuthorize("hasRole('PHARMACIST') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
     @Operation(summary = "Upsert medicine inventory level for a pharmacy by medicineId")
     public ResponseEntity<ApiResponse<InventoryDto>> updatePharmacyInventory(
             @PathVariable Long id,
@@ -58,7 +78,7 @@ public class PharmacyController {
     }
 
     @PutMapping("/{id}/inventory/{inventoryId}")
-    @PreAuthorize("hasRole('PHARMACIST') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
     @Operation(summary = "Update absolute stock quantity for a specific inventory record ID")
     public ResponseEntity<ApiResponse<InventoryDto>> updateInventoryById(
             @PathVariable Long id,
@@ -70,7 +90,7 @@ public class PharmacyController {
     }
 
     @PatchMapping("/{id}/inventory/{inventoryId}/adjust")
-    @PreAuthorize("hasRole('PHARMACIST') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
     @Operation(summary = "Adjust inventory stock quantity by delta (positive or negative)")
     public ResponseEntity<ApiResponse<InventoryDto>> adjustInventoryQuantity(
             @PathVariable Long id,
@@ -82,7 +102,7 @@ public class PharmacyController {
     }
 
     @DeleteMapping("/{id}/inventory/{inventoryId}")
-    @PreAuthorize("hasRole('PHARMACIST') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
     @Operation(summary = "Delete an inventory record for a pharmacy")
     public ResponseEntity<ApiResponse<Void>> deleteInventory(
             @PathVariable Long id,

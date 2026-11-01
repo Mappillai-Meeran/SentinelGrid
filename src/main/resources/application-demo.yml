@@ -1,0 +1,91 @@
+# ==============================================================================
+# SentinelGrid Cloud Demo Profile (Render Free + Neon Free)
+# Profile names: demo, cloud-demo
+# Target budget: ₹0 / month
+# ==============================================================================
+
+spring:
+  config:
+    activate:
+      on-profile: "demo | cloud-demo"
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/sentinelgrid?sslmode=require}
+    username: ${SPRING_DATASOURCE_USERNAME:sentinel_app}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: SentinelGridDemoHikariPool
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:5}
+      minimum-idle: ${HIKARI_MIN_IDLE:1}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${HIKARI_IDLE_TIMEOUT:300000}
+      max-lifetime: ${HIKARI_MAX_LIFETIME:1200000}
+      leak-detection-threshold: ${HIKARI_LEAK_DETECTION_THRESHOLD:60000}
+  jpa:
+    open-in-view: false
+    defer-datasource-initialization: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: "Initial SentinelGrid Schema"
+  sql:
+    init:
+      mode: never
+  kafka:
+    enabled: false
+  redis:
+    enabled: false
+
+server:
+  port: ${PORT:8080}
+
+app:
+  demo:
+    protection-enabled: true
+  jwt:
+    secret: ${JWT_SECRET}
+    verification-secrets: ${JWT_VERIFICATION_SECRETS:}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  security:
+    trusted-proxies: ${SECURITY_TRUSTED_PROXIES:}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  reservation:
+    default-ttl-minutes: 30
+    expiry-cron: "0 */1 * * * *"
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY:}
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: when-authorized
+      roles: ADMIN,ROLE_ADMIN
+

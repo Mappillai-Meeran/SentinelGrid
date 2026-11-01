@@ -35,9 +35,15 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DashboardSummaryDto getSummaryMetrics() {
+        long totalPharmacies = pharmacyRepository.count();
+        long twentyFourSeven = pharmacyRepository.countByIs24Seven(true);
+        long standardHours = Math.max(0, totalPharmacies - twentyFourSeven);
+
         return DashboardSummaryDto.builder()
                 .totalUsers(userRepository.count())
-                .totalPharmacies(pharmacyRepository.count())
+                .totalPharmacies(totalPharmacies)
+                .twentyFourSevenPharmacies(twentyFourSeven)
+                .standardHoursPharmacies(standardHours)
                 .totalMedicines(medicineRepository.count())
                 .totalReservations(reservationRepository.count())
                 .pendingReservations(reservationRepository.countByStatus(ReservationStatus.PENDING))
@@ -57,7 +63,33 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public List<TopPharmacyDto> getTopPharmacies(int limit) {
         int fetchLimit = limit <= 0 ? 5 : limit;
-        return reservationRepository.findTopPharmaciesByReservations(PageRequest.of(0, fetchLimit));
+        List<Object[]> results = reservationRepository.findTopPharmaciesPerformanceAggregates(PageRequest.of(0, fetchLimit));
+        List<TopPharmacyDto> topPharmacies = new ArrayList<>();
+
+        for (Object[] row : results) {
+            String pharmacyName = (String) row[0];
+            Long totalCount = ((Number) row[1]).longValue();
+            Long completedCount = row[2] != null ? ((Number) row[2]).longValue() : 0L;
+            Long cancelledCount = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+            Long expiredCount = row[4] != null ? ((Number) row[4]).longValue() : 0L;
+            Long concludedCount = completedCount + cancelledCount + expiredCount;
+
+            Double fulfillmentRate = null;
+            if (concludedCount > 0) {
+                double rate = (completedCount * 100.0) / concludedCount;
+                fulfillmentRate = Math.round(rate * 10.0) / 10.0;
+            }
+
+            topPharmacies.add(new TopPharmacyDto(
+                    pharmacyName,
+                    totalCount,
+                    completedCount,
+                    concludedCount,
+                    fulfillmentRate
+            ));
+        }
+
+        return topPharmacies;
     }
 
     @Transactional(readOnly = true)

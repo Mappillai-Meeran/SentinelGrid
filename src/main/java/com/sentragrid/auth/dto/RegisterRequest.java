@@ -28,6 +28,6 @@ public class RegisterRequest {
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
-    @NotNull(message = "Role is required (PATIENT, PHARMACIST, ADMIN)")
-    private UserRole role;
+    @Builder.Default
+    private UserRole role = UserRole.PATIENT;
 }

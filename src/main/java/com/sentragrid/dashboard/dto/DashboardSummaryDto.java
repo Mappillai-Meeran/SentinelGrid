@@ -19,4 +19,6 @@ public class DashboardSummaryDto {
     private long expiredReservations;
     private long cancelledReservations;
     private long totalInventoryUnits;
+    private long twentyFourSevenPharmacies;
+    private long standardHoursPharmacies;
 }

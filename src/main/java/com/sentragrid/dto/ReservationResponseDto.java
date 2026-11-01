@@ -28,4 +28,11 @@ public class ReservationResponseDto {
     private LocalDateTime cancelledAt;
     private LocalDateTime createdAt;
     private Long version;
+
+    private String prescriptionNumber;
+    private String doctorName;
+    private String doctorRegNumber;
+    private boolean prescriptionVerified;
+    private String prescriptionVerifiedBy;
+    private LocalDateTime prescriptionVerifiedAt;
 }

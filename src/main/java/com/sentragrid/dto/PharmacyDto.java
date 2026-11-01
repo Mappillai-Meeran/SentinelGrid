@@ -17,4 +17,11 @@ public class PharmacyDto {
     private Double latitude;
     private Double longitude;
     private String contactNumber;
+    private java.time.LocalTime openingTime;
+    private java.time.LocalTime closingTime;
+    private Boolean is24Seven;
+    private String timezone;
+    private String operatingHours;
+    private String status;
+    private Boolean isOpen;
 }

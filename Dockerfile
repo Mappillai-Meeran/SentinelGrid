@@ -14,6 +14,8 @@ EXPOSE 8080
 
 COPY --from=build /app/target/sentinelgrid-1.0.0-SNAPSHOT.jar app.jar
 
-ENV SPRING_PROFILES_ACTIVE=docker
+# Render Free 512 MB memory constraint: container-aware heap allocation and exit on OOM
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError"
+ENV SPRING_PROFILES_ACTIVE=prod,demo
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

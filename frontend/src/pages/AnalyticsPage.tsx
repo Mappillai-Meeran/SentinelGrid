@@ -1,51 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api/client';
-import type { DashboardSummary, TopMedicine, TopPharmacy, DailyReservation } from '../types';
+import { dashboardService } from '../api/services';
+import type { DashboardSummary, LowStockItem } from '../types';
+import { AlertTriangle, FileSpreadsheet, PieChart as PieIcon, ShieldCheck } from 'lucide-react';
+import { ChartSkeleton } from '../components/ui/Skeleton';
+import { ReservationLookupPanel } from '../components/reservations/ReservationLookupPanel';
 import {
-  ShieldCheck,
-  BarChart3,
-  TrendingUp,
-  PieChart as PieIcon,
-  Building2,
-  FileSpreadsheet
-} from 'lucide-react';
-import {
-  ResponsiveContainer,
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  CartesianGrid
 } from 'recharts';
 
 export const AnalyticsPage: React.FC = () => {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [topMedicines, setTopMedicines] = useState<TopMedicine[]>([]);
-  const [topPharmacies, setTopPharmacies] = useState<TopPharmacy[]>([]);
-  const [dailyTrend, setDailyTrend] = useState<DailyReservation[]>([]);
+  const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
-        const [sumRes, topMedRes, topPharmRes, trendRes] = await Promise.all([
-          api.get('/admin/dashboard/summary'),
-          api.get('/admin/dashboard/top-medicines?limit=5'),
-          api.get('/admin/dashboard/pharmacies/top?limit=5'),
-          api.get('/admin/dashboard/reservations/daily?days=7'),
+        const [summaryData, lowStockData] = await Promise.all([
+          dashboardService.getSummary(),
+          dashboardService.getLowStock(10),
         ]);
 
-        setSummary(sumRes.data.data);
-        setTopMedicines(topMedRes.data.data || []);
-        setTopPharmacies(topPharmRes.data.data || []);
-        setDailyTrend(trendRes.data.data || []);
+        setSummary(summaryData);
+        setLowStock(lowStockData);
       } catch (err) {
         console.error('Failed to load analytics workspace data', err);
       } finally {
@@ -61,158 +48,113 @@ export const AnalyticsPage: React.FC = () => {
     const csvContent =
       'data:text/csv;charset=utf-8,' +
       'Metric,Value\n' +
-      `Total Users,${summary.totalUsers}\n` +
-      `Total Pharmacies,${summary.totalPharmacies}\n` +
-      `Total Medicines,${summary.totalMedicines}\n` +
       `Total Reservations,${summary.totalReservations}\n` +
       `Pending Reservations,${summary.pendingReservations}\n` +
       `Confirmed Reservations,${summary.confirmedReservations}\n` +
       `Expired Reservations,${summary.expiredReservations}\n` +
       `Cancelled Reservations,${summary.cancelledReservations}\n` +
-      `Total Inventory Stock,${summary.totalInventoryUnits}\n`;
+      `Low Stock Items,${lowStock.length}\n`;
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `SentinelGrid_Analytics_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `SentinelGrid_Operational_Analytics_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const reservationPieData = summary
+  const reservationStatusData = summary
     ? [
-        { name: 'Pending', value: summary.pendingReservations, color: '#F59E0B' },
-        { name: 'Confirmed', value: summary.confirmedReservations, color: '#10B981' },
-        { name: 'Expired', value: summary.expiredReservations, color: '#EF4444' },
-        { name: 'Cancelled', value: summary.cancelledReservations, color: '#64748B' },
+        { name: 'Pending', value: summary.pendingReservations, color: '#f59e0b' },
+        { name: 'Confirmed', value: summary.confirmedReservations, color: '#10b981' },
+        { name: 'Expired', value: summary.expiredReservations, color: '#ef4444' },
+        { name: 'Cancelled', value: summary.cancelledReservations, color: '#64748b' },
       ]
     : [];
 
   return (
     <div className="space-y-6">
-      {/* Top Title & Export Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-blue-400" />
-            Executive Analytics &amp; Intelligence Workspace
+          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-blue-500" />
+            Operational Analytics
           </h2>
-          <p className="text-xs text-slate-400">System telemetry, demand breakdown, and performance metrics</p>
+          <p className="text-xs text-slate-500">Focused charts for stock risk and reservation reliability.</p>
         </div>
 
         <button
           onClick={exportCSV}
-          className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs flex items-center gap-2 border border-slate-700 transition-colors"
+          className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-2 border border-slate-200 shadow-xs transition-colors"
         >
-          <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-          Export Analytics CSV
+          <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+          Export CSV
         </button>
       </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-slate-500 font-medium text-xs">Loading analytics data...</div>
-      ) : (
-        <>
-          {/* Charts Row 1: Line Trend & Donut Distribution */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Daily Reservation Trend Line Chart */}
-            <div className="lg:col-span-2 glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-400" />
-                Daily Reservation Volume (Last 7 Days)
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={dailyTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="#64748b" allowDecimals={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }} />
-                    <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+      <ReservationLookupPanel scopeLabel="Admin access can inspect reservation details across all pharmacy branches." />
 
-            {/* Reservation Status Donut Chart */}
-            <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <PieIcon className="w-4 h-4 text-purple-400" />
-                Status Distribution
-              </h3>
-              <div className="h-48">
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartSkeleton />
+          <ChartSkeleton />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <section className="glass-panel p-6 rounded-3xl border border-slate-200/80 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              Low Stock / Critical Medicines
+            </h3>
+            <div className="h-72">
+              {lowStock.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-xs text-slate-400">No low stock items right now.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={lowStock}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="medicineName" stroke="#94a3b8" tick={{ fontSize: 10 }} interval={0} />
+                    <YAxis stroke="#94a3b8" allowDecimals={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '12px', fontSize: '12px' }} />
+                    <Bar dataKey="availableQuantity" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </section>
+
+          <section className="glass-panel p-6 rounded-3xl border border-slate-200/80 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <PieIcon className="w-4 h-4 text-blue-500" />
+              Reservation Status Overview
+            </h3>
+            <div className="h-56">
+              {!summary || summary.totalReservations === 0 ? (
+                <div className="h-full flex items-center justify-center text-xs text-slate-400">No reservation records collected yet.</div>
+              ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={reservationPieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={75}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {reservationPieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Pie data={reservationStatusData} cx="50%" cy="50%" innerRadius={58} outerRadius={86} paddingAngle={4} dataKey="value">
+                      {reservationStatusData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '12px', fontSize: '12px' }} />
                   </PieChart>
                 </ResponsiveContainer>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs font-semibold pt-2 border-t border-slate-800">
-                {reservationPieData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }}></span>
-                    <span className="text-slate-400">{item.name}:</span>
-                    <span className="text-white font-bold">{item.value}</span>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
-          </div>
-
-          {/* Charts Row 2: Top Reserved Medicines & Top Pharmacies */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-emerald-400" />
-                Most Reserved Emergency Medicines
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topMedicines}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="medicineName" stroke="#64748b" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="#64748b" allowDecimals={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }} />
-                    <Bar dataKey="reservationCount" fill="#10b981" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {reservationStatusData.map((item) => (
+                <div key={item.name} className="rounded-2xl bg-white border border-slate-200 p-3 text-center">
+                  <p className="text-lg font-bold text-slate-900">{item.value}</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">{item.name}</p>
+                </div>
+              ))}
             </div>
-
-            <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-blue-400" />
-                Top Performing Pharmacy Hubs
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topPharmacies}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="pharmacyName" stroke="#64748b" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="#64748b" allowDecimals={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }} />
-                    <Bar dataKey="reservationCount" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        </>
+          </section>
+        </div>
       )}
     </div>
   );

@@ -33,6 +33,7 @@ public class Medicine extends BaseEntity {
 
     private String dosage;
 
+    @Builder.Default
     @Column(name = "requires_prescription", nullable = false)
     private boolean requiresPrescription = false;
 }

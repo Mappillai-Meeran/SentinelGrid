@@ -14,7 +14,11 @@ import java.time.LocalDateTime;
  * Includes @Version for optimistic concurrency control.
  */
 @Entity
-@Table(name = "reservations")
+@Table(name = "reservations", indexes = {
+        @Index(name = "idx_reservations_status_expires_at", columnList = "status, expires_at"),
+        @Index(name = "idx_reservations_patient_status_created", columnList = "patient_id, status, created_at DESC"),
+        @Index(name = "idx_reservations_pharmacy_status_created", columnList = "pharmacy_id, status, created_at DESC")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -58,6 +62,25 @@ public class Reservation extends BaseEntity {
 
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
+
+    @Column(name = "prescription_number", length = 100)
+    private String prescriptionNumber;
+
+    @Column(name = "doctor_name", length = 100)
+    private String doctorName;
+
+    @Column(name = "doctor_reg_number", length = 100)
+    private String doctorRegNumber;
+
+    @Builder.Default
+    @Column(name = "prescription_verified", nullable = false)
+    private boolean prescriptionVerified = false;
+
+    @Column(name = "prescription_verified_by", length = 100)
+    private String prescriptionVerifiedBy;
+
+    @Column(name = "prescription_verified_at")
+    private LocalDateTime prescriptionVerifiedAt;
 
     @Version
     private Long version;

@@ -10,4 +10,5 @@ public class AppConstants {
     public static final String CACHE_PHARMACY_INVENTORY = "pharmacyInventoryCache";
 
     public static final int LOW_STOCK_THRESHOLD = 5;
+    public static final double DEFAULT_SEARCH_RADIUS_KM = 25.0;
 }

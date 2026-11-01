@@ -21,6 +21,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByPatientUsernameOrderByCreatedAtDesc(String username);
 
+    List<Reservation> findByPharmacyIdOrderByCreatedAtDesc(Long pharmacyId);
+
+    List<Reservation> findByPharmacyIdAndStatusOrderByCreatedAtDesc(Long pharmacyId, ReservationStatus status);
+
     List<Reservation> findByStatus(ReservationStatus status);
 
     @Query("SELECT r FROM Reservation r " +
@@ -39,6 +43,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     long countByStatus(ReservationStatus status);
 
+    long countByPharmacyIdAndStatus(Long pharmacyId, ReservationStatus status);
+
     @Query("SELECT new com.sentragrid.dashboard.dto.TopMedicineDto(r.medicine.name, COUNT(r)) " +
            "FROM Reservation r " +
            "GROUP BY r.medicine.name " +
@@ -50,6 +56,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
            "GROUP BY r.pharmacy.name " +
            "ORDER BY COUNT(r) DESC")
     List<com.sentragrid.dashboard.dto.TopPharmacyDto> findTopPharmaciesByReservations(org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT r.pharmacy.name, " +
+           "COUNT(r), " +
+           "SUM(CASE WHEN r.status = com.sentragrid.entity.enums.ReservationStatus.CONFIRMED THEN 1L ELSE 0L END), " +
+           "SUM(CASE WHEN r.status = com.sentragrid.entity.enums.ReservationStatus.CANCELLED THEN 1L ELSE 0L END), " +
+           "SUM(CASE WHEN r.status = com.sentragrid.entity.enums.ReservationStatus.EXPIRED THEN 1L ELSE 0L END) " +
+           "FROM Reservation r " +
+           "GROUP BY r.pharmacy.id, r.pharmacy.name " +
+           "ORDER BY COUNT(r) DESC")
+    List<Object[]> findTopPharmaciesPerformanceAggregates(org.springframework.data.domain.Pageable pageable);
 
     @Query("SELECT CAST(r.createdAt AS date) as date, COUNT(r) as count " +
            "FROM Reservation r " +

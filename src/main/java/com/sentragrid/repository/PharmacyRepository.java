@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface PharmacyRepository extends JpaRepository<Pharmacy, Long> {
     List<Pharmacy> findByCityIgnoreCase(String city);
+
+    long countByIs24Seven(boolean is24Seven);
 }

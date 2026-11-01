@@ -6,8 +6,30 @@ echo =========================================================================
 echo               SentinelGrid Emergency Medicine Platform                  
 echo =========================================================================
 echo.
+
+:: Load environment variables from .env if present
+if exist "%~dp0.env" (
+    echo Loading configuration from .env file...
+    for /f "usebackq tokens=1* delims==" %%A in ("%~dp0.env") do (
+        if not "%%A"=="" (
+            echo %%A | findstr /r "^#" >nul || set "%%A=%%B"
+        )
+    )
+)
+
+:: Set default profile for local development
+if "%SPRING_PROFILES_ACTIVE%"=="" set "SPRING_PROFILES_ACTIVE=local"
+
+echo Active Spring Profile: %SPRING_PROFILES_ACTIVE%
+if not "%GEMINI_API_KEY%"=="" (
+    echo Gemini AI Search:     Configured
+) else (
+    echo Gemini AI Search:     Fallback mode (deterministic SQL)
+)
+echo.
+
 echo Starting SentinelGrid Backend (Spring Boot on http://localhost:8080)...
-start "SentinelGrid Backend (Spring Boot)" cmd /k "color 0B && title SentinelGrid Backend && mvn spring-boot:run"
+start "SentinelGrid Backend (Spring Boot)" cmd /k "color 0B && title SentinelGrid Backend && set SPRING_PROFILES_ACTIVE=%SPRING_PROFILES_ACTIVE%&& set SPRING_DATASOURCE_PASSWORD=%SPRING_DATASOURCE_PASSWORD%&& set GEMINI_API_KEY=%GEMINI_API_KEY%&& mvn spring-boot:run"
 
 echo.
 echo Waiting 5 seconds for backend initialization...
@@ -15,7 +37,7 @@ timeout /t 5 /nobreak > nul
 
 echo.
 echo Starting SentinelGrid Frontend (React + Vite on http://localhost:3000)...
-start "SentinelGrid Frontend (React + Vite)" cmd /k "color 0D && title SentinelGrid Frontend && cd frontend && npm run dev"
+start "SentinelGrid Frontend (React + Vite)" cmd /k "color 0D && title SentinelGrid Frontend && cd /d "%~dp0frontend" && npm run dev"
 
 echo.
 echo =========================================================================
@@ -24,12 +46,12 @@ echo
 echo  - Backend API:   http://localhost:8080
 echo  - Frontend App:  http://localhost:3000
 echo  - Swagger UI:    http://localhost:8080/swagger-ui.html
-echo  - H2 Console:    http://localhost:8080/h2-console
 echo.
-echo  Demo Logins:
-echo  - Patient:    patient1 / password123
-echo  - Pharmacist: pharmacist1 / password123
-echo  - Admin:      admin1 / password123
+echo  Demo Logins (Password: password123):
+echo  - Patient:    patient1
+echo  - Pharmacist: pharmacist1 (Puducherry) / pharmacist-chennai-anna (Chennai)
+echo  - Manager:    manager1 (Puducherry) / manager-chennai-anna (Chennai)
+echo  - Admin:      admin1 (All cities)
 echo =========================================================================
 echo.
 

@@ -6,17 +6,24 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: sentinelgrid-app
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sentinelgrid
-      - SPRING_DATASOURCE_USERNAME=sentinel_user
-      - SPRING_DATASOURCE_PASSWORD=sentinel_password
+      - SPRING_PROFILES_ACTIVE=prod,docker
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/sentinelgrid}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-sentinel_user}
+      - "SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:?CRITICAL: SPRING_DATASOURCE_PASSWORD must be explicitly set for Docker deployment.}"
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      - "JWT_SECRET=${JWT_SECRET:?CRITICAL: JWT_SECRET must be explicitly set for Docker deployment. Do not use development placeholders in production.}"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -28,16 +35,17 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: sentinelgrid-postgres
-    ports:
-      - "5432:5432"
+    restart: unless-stopped
+    # Security: In production Compose, PostgreSQL port 5432 is restricted to the internal Docker network.
+    # To expose port 5432 for local development, run with: docker compose -f docker-compose.yml -f docker-compose.local.yml up
     environment:
-      - POSTGRES_DB=sentinelgrid
-      - POSTGRES_USER=sentinel_user
-      - POSTGRES_PASSWORD=sentinel_password
+      - POSTGRES_DB=${POSTGRES_DB:-sentinelgrid}
+      - "POSTGRES_USER=${POSTGRES_USER:?CRITICAL: POSTGRES_USER must be explicitly set for Docker deployment.}"
+      - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?CRITICAL: POSTGRES_PASSWORD must be explicitly set for Docker deployment.}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sentinel_user -d sentinelgrid"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -45,12 +53,19 @@ services:
   redis:
     image: redis:7-alpine
     container_name: sentinelgrid-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: sentinelgrid-zookeeper
+    restart: unless-stopped
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -58,6 +73,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: sentinelgrid-kafka
+    restart: unless-stopped
     ports:
       - "9092:9092"
     depends_on:
@@ -69,6 +85,23 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sentinelgrid-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      app:
+        condition: service_healthy
 
 volumes:
   postgres_data:

@@ -15,6 +15,8 @@ import lombok.*;
 @Entity
 @Table(name = "inventory", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"pharmacy_id", "medicine_id"})
+}, indexes = {
+        @Index(name = "idx_inventory_pharmacy_qty", columnList = "pharmacy_id, quantity")
 })
 @Getter
 @Setter
@@ -41,6 +43,7 @@ public class Inventory extends BaseEntity {
     @Column(nullable = false)
     private Integer quantity;
 
+    @Builder.Default
     @Min(0)
     @Column(name = "reserved_quantity", nullable = false)
     private Integer reservedQuantity = 0;

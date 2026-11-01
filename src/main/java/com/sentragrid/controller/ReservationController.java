@@ -30,20 +30,31 @@ public class ReservationController {
 
     @PostMapping
     @PreAuthorize("hasRole('PATIENT') or hasRole('ADMIN')")
-    @Operation(summary = "Create a medicine reservation with optimistic locking protection")
+    @Operation(summary = "Create a medicine reservation with optimistic locking protection and idempotency key support")
     public ResponseEntity<ApiResponse<ReservationResponseDto>> createReservation(
             @Valid @RequestBody ReservationRequestDto request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             Authentication authentication) {
         User patient = userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
 
-        ReservationResponseDto response = reservationService.createReservation(patient.getId(), request);
+        ReservationResponseDto response = reservationService.createReservation(patient.getId(), request, idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Reservation created successfully. Stock reserved."));
     }
 
+    @PostMapping("/{id}/verify-prescription")
+    @PreAuthorize("hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
+    @Operation(summary = "Verify prescription for a reservation by an authorized pharmacist at the assigned pharmacy")
+    public ResponseEntity<ApiResponse<ReservationResponseDto>> verifyPrescription(
+            @PathVariable Long id,
+            Authentication authentication) {
+        ReservationResponseDto response = reservationService.verifyPrescription(id, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(response, "Prescription verified successfully"));
+    }
+
     @PostMapping("/{id}/confirm")
-    @PreAuthorize("hasRole('PHARMACIST') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
     @Operation(summary = "Confirm pickup of reserved medicine")
     public ResponseEntity<ApiResponse<ReservationResponseDto>> confirmPickup(
             @PathVariable Long id,
@@ -53,7 +64,7 @@ public class ReservationController {
     }
 
     @PostMapping("/{id}/cancel")
-    @PreAuthorize("hasRole('PATIENT') or hasRole('PHARMACIST') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PATIENT') or hasRole('PHARMACIST') or hasRole('PHARMACY_MANAGER') or hasRole('ADMIN')")
     @Operation(summary = "Cancel an active reservation and release stock")
     public ResponseEntity<ApiResponse<ReservationResponseDto>> cancelReservation(
             @PathVariable Long id,
@@ -78,8 +89,10 @@ public class ReservationController {
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get reservation by ID")
-    public ResponseEntity<ApiResponse<ReservationResponseDto>> getReservationById(@PathVariable Long id) {
-        ReservationResponseDto response = reservationService.getReservationById(id);
+    public ResponseEntity<ApiResponse<ReservationResponseDto>> getReservationById(
+            @PathVariable Long id,
+            Authentication authentication) {
+        ReservationResponseDto response = reservationService.getReservationById(id, authentication != null ? authentication.getName() : null);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

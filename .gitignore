@@ -19,3 +19,15 @@ target/
 ### OS ###
 .DS_Store
 Thumbs.db
+
+### Environment and Secret Files ###
+.env
+.env.*
+*.env
+!.env.example
+!**/.env.example
+
+### Python ###
+.venv/
+__pycache__/
+*.pyc

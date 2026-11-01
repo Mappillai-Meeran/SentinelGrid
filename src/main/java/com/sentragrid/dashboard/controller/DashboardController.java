@@ -69,6 +69,7 @@ public class DashboardController {
     }
 
     @GetMapping("/audit-logs")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get system audit logs")
     public ResponseEntity<ApiResponse<List<com.sentragrid.audit.entity.AuditLog>>> getAuditLogs() {
         List<com.sentragrid.audit.entity.AuditLog> logs = auditLogService.getAllAuditLogs();

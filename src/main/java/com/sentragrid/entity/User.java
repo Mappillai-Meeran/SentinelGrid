@@ -38,4 +38,8 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "pharmacy_id")
+    private Pharmacy pharmacy;
 }
