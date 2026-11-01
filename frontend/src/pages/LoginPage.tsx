@@ -22,20 +22,62 @@ import {
 import logoWhiteImg from '../assets/logo/logo-white.png';
 import logoMainImg from '../assets/logo/logo-main.png';
 
+type DemoRole = 'patient' | 'pharmacist' | 'manager' | 'admin';
+
+const DEMO_PRESETS: Record<
+  DemoRole,
+  { username: string; label: string; roleName: string; icon: React.ElementType; color: string; desc: string }
+> = {
+  patient: {
+    username: 'patient1',
+    label: 'Patient',
+    roleName: 'CareLink Portal',
+    icon: User,
+    color: 'border-blue-200 bg-blue-50/70 text-blue-700 hover:bg-blue-100',
+    desc: 'AI medicine locator, 15-min emergency holds & prescription uploads',
+  },
+  pharmacist: {
+    username: 'pharmacist1',
+    label: 'Pharmacist',
+    roleName: 'Scriptly Desk',
+    icon: Package,
+    color: 'border-emerald-200 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100',
+    desc: 'Prescription verification, stock adjustments & pickup confirmation',
+  },
+  manager: {
+    username: 'manager1',
+    label: 'Manager',
+    roleName: 'Branch Console',
+    icon: Users,
+    color: 'border-purple-200 bg-purple-50/70 text-purple-700 hover:bg-purple-100',
+    desc: 'Branch staff scheduling, low-stock alerts & operational governance',
+  },
+  admin: {
+    username: 'admin1',
+    label: 'Admin',
+    roleName: 'Co-Doctor Command',
+    icon: ShieldCheck,
+    color: 'border-amber-200 bg-amber-50/70 text-amber-700 hover:bg-amber-100',
+    desc: 'Multi-city network observability, audit trails & routing telemetry',
+  },
+};
+
 export const LoginPage: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('patient1');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('password123');
+  const [selectedDemoRole, setSelectedDemoRole] = useState<DemoRole>('patient');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const login = useAuthStore((state: any) => state.login);
   const navigate = useNavigate();
 
-  const handleSelectPatientDemo = () => {
+  const handleSelectDemoRole = (roleKey: DemoRole) => {
+    setSelectedDemoRole(roleKey);
     setMode('login');
-    setUsername('patient1');
+    setUsername(DEMO_PRESETS[roleKey].username);
     setPassword('password123');
     setError('');
   };
@@ -237,51 +279,57 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Public Demo Quick Access: Patient Only */}
+          {/* Demo Role Presets (Patient, Pharmacist, Manager, Admin) */}
           {mode === 'login' && (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Public Demonstration Profile:
+                  One-Click Demo Profiles:
                 </span>
-                <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  Patient Sandbox
+                <span className="text-[10px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                  Select Any Role
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={handleSelectPatientDemo}
-                className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
-                  username === 'patient1'
-                    ? 'border-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20 shadow-xs'
-                    : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100 text-slate-700'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-blue-100 text-blue-700">
-                    <User className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">1-Click Patient Demo</span>
-                      <span className="text-[10px] font-mono text-blue-700 bg-blue-100/70 px-1.5 py-0.5 rounded font-semibold">
-                        patient1
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      AI medicine search, 15-minute emergency holds & route calculation
-                    </p>
-                  </div>
-                </div>
-                {username === 'patient1' && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />}
-              </button>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(Object.keys(DEMO_PRESETS) as DemoRole[]).map((roleKey) => {
+                  const preset = DEMO_PRESETS[roleKey];
+                  const Icon = preset.icon;
+                  const isSelected = selectedDemoRole === roleKey && username === preset.username;
 
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 text-[11px] text-slate-500 flex items-start gap-2">
-                <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                <span>
-                  <strong className="text-slate-700">Institutional Access:</strong> Pharmacist, Branch Manager, and Admin roles require private organization credentials. Public demo quick-login is restricted to patients to enforce least-privilege security.
-                </span>
+                  return (
+                    <button
+                      key={roleKey}
+                      type="button"
+                      onClick={() => handleSelectDemoRole(roleKey)}
+                      className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? 'border-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20 shadow-xs'
+                          : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <Icon className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-500'}`} />
+                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
+                      </div>
+                      <div>
+                        <p className={`text-xs font-bold truncate ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>
+                          {preset.label}
+                        </p>
+                        <p className="text-[10px] text-slate-450 truncate font-mono">{preset.username}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Active Role Description Snippet */}
+              <div className="px-3 py-2 bg-slate-50 rounded-xl border border-slate-200/80 text-[11px] text-slate-600 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="font-bold text-slate-800">{DEMO_PRESETS[selectedDemoRole].roleName}:</span>
+                  <span className="text-slate-500 truncate">{DEMO_PRESETS[selectedDemoRole].desc}</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400 shrink-0 ml-2">password123</span>
               </div>
             </div>
           )}
@@ -358,9 +406,7 @@ export const LoginPage: React.FC = () => {
               <span>
                 {mode === 'register'
                   ? 'Create Patient Account'
-                  : username === 'patient1'
-                  ? 'Sign In as Demo Patient'
-                  : 'Sign In to Healthcare Grid'}
+                  : `Sign In as ${DEMO_PRESETS[selectedDemoRole].label} (${username})`}
               </span>
             </button>
           </form>
